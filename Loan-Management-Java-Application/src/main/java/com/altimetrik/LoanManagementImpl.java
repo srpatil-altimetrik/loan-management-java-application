@@ -177,7 +177,28 @@ public class LoanManagementImpl implements LoanManagement {
 	@Override
 	public void loanRepayment(int loanId, double amount) {
 		// TODO Auto-generated method stub
-		
+		double emi = calculateEMI(loanId);
+		double remainingAmount = 0;
+		try {
+			Connection getConnection = dbConfig.getConnection();
+			String loanRepaymentQuery = "SELECT principalAmount FROM loan WHERE loanId = ?";
+			PreparedStatement preparedStatement = getConnection.prepareStatement(loanRepaymentQuery);
+			preparedStatement.setInt(1, loanId);
+			ResultSet resultSet = preparedStatement.executeQuery();
+			if (resultSet.next()) {
+				double principal = resultSet.getDouble("principalAmount");
+				remainingAmount = principal - amount;
+				if (remainingAmount <= 0) {
+					System.out.println("Loan repaid successfully.");
+				} else {
+					System.out.println("Remaining amount: " + remainingAmount);
+				}
+			} else {
+				System.out.println("Loan ID not found.");
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 	}
 
 	@Override
