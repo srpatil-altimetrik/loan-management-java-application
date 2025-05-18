@@ -1,5 +1,6 @@
 package com.altimetrik;
 
+import java.sql.SQLException;
 import java.util.List;
 import java.util.Scanner;
 
@@ -93,7 +94,12 @@ public class MainApp {
 				scanner.nextLine();
 				System.out.print("Enter Repayment Amount: ");
 				double repaymentAmount = scanner.nextDouble();
-				
+				try {
+					loanManagement.loanRepayment(loanIdForRepayment, repaymentAmount);
+				} catch (SQLException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 				break;
 			case 6:
 				// Get all loans

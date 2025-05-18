@@ -3,6 +3,7 @@ package com.altimetrik;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
@@ -175,30 +176,53 @@ public class LoanManagementImpl implements LoanManagement {
 	}
 
 	@Override
-	public void loanRepayment(int loanId, double amount) {
+	public void loanRepayment(int loanId, double amount) throws SQLException {
 		// TODO Auto-generated method stub
-		double emi = calculateEMI(loanId);
-		double remainingAmount = 0;
 		try {
 			Connection getConnection = dbConfig.getConnection();
-			String loanRepaymentQuery = "SELECT principalAmount FROM loan WHERE loanId = ?";
-			PreparedStatement preparedStatement = getConnection.prepareStatement(loanRepaymentQuery);
+			String getLoanDetailsQuery = "SELECT principalAmount,interestRate, loanTerm FROM loan WHERE loanId = ?";
+			PreparedStatement preparedStatement = getConnection.prepareStatement(getLoanDetailsQuery);
 			preparedStatement.setInt(1, loanId);
 			ResultSet resultSet = preparedStatement.executeQuery();
 			if (resultSet.next()) {
-				double principal = resultSet.getDouble("principalAmount");
-				remainingAmount = principal - amount;
-				if (remainingAmount <= 0) {
-					System.out.println("Loan repaid successfully.");
-				} else {
-					System.out.println("Remaining amount: " + remainingAmount);
+				double principalAmount = resultSet.getDouble("principalAmount");
+				double interestRate = resultSet.getDouble("interestRate");
+				int loanTerm = resultSet.getInt("loanTerm");
+				double emi = calculateEMI(principalAmount, interestRate, loanTerm);
+				System.out.println(emi);
+				// Calculate the remaining balance after repayment
+//				double remainingBalance = principalAmount - amount;
+				if (amount < emi) {
+					System.out.println("Repayment amount is less than EMI. Please pay the EMI first.");
+					return;
 				}
+				int noOfEmi = (int) (amount / emi);
+				if (noOfEmi > loanTerm) {
+					noOfEmi = loanTerm;
+				}
+
+				double totalPaid = noOfEmi * emi;
+				int remainingTerm = loanTerm - noOfEmi;
+				double remainingPrincipal = principalAmount - (principalAmount / loanTerm) * noOfEmi;
+				if (remainingPrincipal < 0) {
+					remainingPrincipal = 0;
+				}
+				// Update the loan record with the new principal amount
+				String updateLoanQuery = "UPDATE loan SET principalAmount = ?, principalAmount = ? WHERE loanId = ?";
+				PreparedStatement updatePreparedStatement = getConnection.prepareStatement(updateLoanQuery);
+				updatePreparedStatement.setDouble(1, remainingTerm);
+				updatePreparedStatement.setFloat(2, (float) remainingPrincipal);
+				updatePreparedStatement.setInt(3, loanId);
+				int rowsAffected = updatePreparedStatement.executeUpdate();
+				System.out.println("Payment successful. EMIs paid: " + noOfEmi + ". Remaining EMIs: " + remainingTerm);
 			} else {
 				System.out.println("Loan ID not found.");
 			}
-		} catch (Exception e) {
+		} catch (CustomException e) {
+			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+
 	}
 
 	@Override

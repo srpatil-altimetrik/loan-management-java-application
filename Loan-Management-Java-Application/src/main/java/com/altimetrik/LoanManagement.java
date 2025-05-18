@@ -1,5 +1,6 @@
 package com.altimetrik;
 
+import java.sql.SQLException;
 import java.util.List;
 
 public interface LoanManagement {
@@ -8,7 +9,7 @@ public interface LoanManagement {
 	double calculateInterest(int loanId);
 	String loanStatus(int loanId);
 	double calculateEMI(int loanId);
-	void loanRepayment(int loanId, double amount);
+	void loanRepayment(int loanId, double amount) throws SQLException;
 	List<Loan> getAllLoan();
 	Loan getLoanById(int loanId);
 
